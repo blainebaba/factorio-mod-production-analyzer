@@ -195,7 +195,7 @@ local MONITOR_KEY = "belt-analyzer-monitors"
 
 local function draw_monitor_canvas(monitor, text)
     local text_id = rendering.draw_text({text = text, surface = monitor.surface, target = monitor.canvas, color = {1,1,1,1}, 
-        alignment = "left", vertical_alignment = "middle", use_rich_text = true, scale=1.5, target_offset={-0.27,-0.25}})
+        alignment = "left", vertical_alignment = "middle", use_rich_text = true, scale=3, scale_with_zoom = true, only_in_alt_mode = true})
     table.insert(monitor.texts, text_id)
 end
 
@@ -214,7 +214,7 @@ local function update_monitor(monitor)
     local matched_resources = match_resources(consumption, production)
 
     -- generate text
-    local text = "[color=red]↓[/color]"
+    local text = "[color=red]←[/color]"
     local res_count = 0
     for res, cp in pairs(matched_resources) do
         if res_count >= 2 then
