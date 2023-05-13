@@ -1,10 +1,16 @@
 
 data:extend({
     {
-        -- Keyboard shortcut to trace
         type = "custom-input",
         name = "add-monitor",
         key_sequence = "SHIFT + A",
+        action = "lua",
+        order = "b"
+    },
+    {
+        type = "custom-input",
+        name = "instant-analyze",
+        key_sequence = "SHIFT + S",
         action = "lua",
         order = "b"
     },

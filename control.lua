@@ -281,3 +281,27 @@ script.on_event('add-monitor', function(event)
         update_monitor(global[MONITOR_KEY][key])
     end
 end)
+
+script.on_event('instant-analyze', function(event)
+    local player = game.players[event.player_index] -- LuaPlayer 
+    local entity = player.selected -- return selected entity 
+    local surface = player.surface
+    
+    if not entity then
+        return
+    end
+
+    if not myutils.is_belt(entity) then
+        game.print("Can only analyze on belt.")
+        return
+    end
+
+    local downstream_machines = scan_machines(entity, surface, "down")
+    local upstream_machines = scan_machines(entity, surface, "up")
+
+    local consumption = compute_resources(downstream_machines, "down")
+    local production = compute_resources(upstream_machines, "up")
+
+    game.print("Production: " .. serpent.block(production))
+    game.print("Consumption: " .. serpent.block(consumption))
+end)
