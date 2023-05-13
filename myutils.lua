@@ -48,6 +48,10 @@ function myutils.decimal_round_up(num)
     return math.floor(num * 100) / 100
 end
 
+function myutils.print(t)
+    game.print(serpent.block(t))
+end
+
 -- ------------------------------
 -- table
 -- ------------------------------
@@ -73,6 +77,13 @@ function myutils.table.containsValue(table, value)
         end
     end
     return false
+end
+
+function myutils.table.first(table)
+    for k,v in pairs(table) do
+        return k, v
+    end
+    return nil, nil
 end
 
 -- ------------------------------

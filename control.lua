@@ -7,6 +7,7 @@ local INSERTER = "inserter"
 local ASSEMBLING_MACHINE = "assembling-machine"
 local FURNACE = "furnace"
 local MINING_DRILL = "mining-drill"
+local BOILER = "boiler"
 
 local NO_INPUT_STATUS
 local FULL_OUTPUT_STATUS
@@ -117,10 +118,10 @@ local function scan_machines(start_belt, surface, di)
                         else
                             connect_pos = cur.pickup_position
                         end
-                        -- connected belts, machines, furnance
+                        -- connected belts, machines, furnance, boiler
                         local e = surface.find_entities_filtered({
                             position = connect_pos, 
-                            type = {TRANSPORT_BELT, UNDERGROUND_BELT, SPLITTER, ASSEMBLING_MACHINE, FURNACE}
+                            type = {TRANSPORT_BELT, UNDERGROUND_BELT, SPLITTER, ASSEMBLING_MACHINE, FURNACE, BOILER}
                             })[1]
                         if e ~= nil then
                             table.insert(neighbours, e)
@@ -135,7 +136,7 @@ local function scan_machines(start_belt, surface, di)
                     if all_entities[key] == nil then
                         all_entities[key] = n
                         table.insert(next_batch, n)
-                        if n.type == ASSEMBLING_MACHINE or n.type == FURNACE or n.type == MINING_DRILL then
+                        if myutils.table.containsValue({ASSEMBLING_MACHINE, FURNACE, MINING_DRILL, BOILER}, n.type) then
                             table.insert(machines, n)
                         end
                     end
@@ -145,11 +146,6 @@ local function scan_machines(start_belt, surface, di)
         cur_batch = next_batch
         next_batch = {}
     end
-    -- debug output
-    -- do
-    --     local counters = myutils.count_by_type(all_entities)
-    --     game.print("scanned " .. (di == "down" and "downstream" or "upstream") .. " entities: " .. serpent.block(counters))
-    -- end
     return machines
 end
 
@@ -158,12 +154,14 @@ end
 local function compute_resources(entities, di)
     local resources = {}
     for _, e in pairs(entities) do
+
+        -- recipe resources
         if e.type == ASSEMBLING_MACHINE or e.type == FURNACE then
-            if e.get_recipe() ~= nil then
-                if di == "down" and myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) or
-                    di == "up" and myutils.table.containsValue(NO_INPUT_STATUS, e.status) then
-                    -- Ignore full output downstream machines and missing input upstream machines.
-                else
+            if di == "down" and myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) or
+                di == "up" and myutils.table.containsValue(NO_INPUT_STATUS, e.status) then
+                -- Ignore full output downstream machines and missing input upstream machines.
+            else
+                if e.get_recipe() ~= nil then
                     local time = e.get_recipe().energy / e.crafting_speed
                     local recipe_res = (di == "down" and e.get_recipe().ingredients or e.get_recipe().products)
                     for _,res in pairs(recipe_res) do
@@ -171,13 +169,32 @@ local function compute_resources(entities, di)
                     end
                 end
             end
-        elseif e.type == MINING_DRILL then
+        end
+
+        if e.type == MINING_DRILL then
             if di == "up" then
                 if e.mining_target ~= nil then
                     local mining_time = e.mining_target.prototype.mineable_properties.mining_time
                     local mining_speed = e.prototype.mining_speed
                     resources[e.mining_target.name] = (resources[e.mining_target.name] or 0) + (mining_speed / mining_time)
                 end
+            end
+        end
+
+        -- furnace/boiler coal consumption
+        if e.burner ~= nil and di == "down" then
+            if e.burner.currently_burning ~= nil and not myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) then
+                local res = e.burner.currently_burning
+                local energy_usage_per_sec
+                if e.type == BOILER then
+                    -- boiler might not run at max energy usage
+                    -- TODO
+                    energy_usage_per_sec = e.prototype.max_energy_usage * 60
+                else
+                    energy_usage_per_sec = e.prototype.max_energy_usage * 60
+                end
+                local total_enerygy = res.fuel_value
+                resources[res.name] = (resources[res.name] or 0) + (energy_usage_per_sec / total_enerygy)
             end
         end
     end
@@ -299,7 +316,7 @@ script.on_event('instant-analyze', function(event)
     local player = game.players[event.player_index] -- LuaPlayer 
     local entity = player.selected -- return selected entity 
     local surface = player.surface
-    
+
     if not entity then
         return
     end
@@ -314,7 +331,13 @@ script.on_event('instant-analyze', function(event)
 
     local consumption = compute_resources(downstream_machines, "down")
     local production = compute_resources(upstream_machines, "up")
+    local matched_resources = match_resources(consumption, production)
 
-    game.print("Production: " .. serpent.block(production))
-    game.print("Consumption: " .. serpent.block(consumption))
+    local output = "Analyze result:\n"
+    for res,cp in pairs(matched_resources) do
+        output = output .. "[img=item." .. res .. "]" .. 
+                "[color=0.5,1,0.5]" .. (cp.p and myutils.decimal_round_up(cp.p) or "-") .."[/color]" .. "→" .. 
+                "[color=1,0.5,0.5]" .. (cp.c and myutils.decimal_round_up(cp.c) or "-") .. "[/color]\n"
+    end
+    game.print(output)
 end)
