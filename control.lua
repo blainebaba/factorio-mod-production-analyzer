@@ -159,7 +159,13 @@ local function compute_resources(entities, di)
                 end
             end
         elseif e.type == MINING_DRILL then
-            -- TODO
+            if di == "up" then
+                if e.mining_target ~= nil then
+                    local mining_time = e.mining_target.prototype.mineable_properties.mining_time
+                    local mining_speed = e.prototype.mining_speed
+                    resources[e.mining_target.name] = (resources[e.mining_target.name] or 0) + (mining_speed / mining_time)
+                end
+            end
         end
     end
     return resources
