@@ -49,7 +49,7 @@ function myutils.decimal_round_up(num)
 end
 
 -- ------------------------------
--- inserter
+-- table
 -- ------------------------------
 
 function myutils.table.size(t)
@@ -64,6 +64,15 @@ function myutils.table.insertAll(to, from)
     for _,v in pairs(from) do
         table.insert(to, v)
     end
+end
+
+function myutils.table.containsValue(table, value)
+    for _,v in pairs(table) do
+        if v == value then
+            return true
+        end
+    end
+    return false
 end
 
 -- ------------------------------

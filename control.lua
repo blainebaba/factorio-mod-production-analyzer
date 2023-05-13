@@ -8,6 +8,14 @@ local ASSEMBLING_MACHINE = "assembling-machine"
 local FURNACE = "furnace"
 local MINING_DRILL = "mining-drill"
 
+local NO_INPUT_STATUS
+local FULL_OUTPUT_STATUS
+do
+    local s = defines.entity_status
+    NO_INPUT_STATUS = {s.fluid_ingredient_shortage, s.item_ingredient_shortage, s.no_ingredients}
+    FULL_OUTPUT_STATUS = {s.full_output}
+end
+
 ---@alias Direction
 ---| "up"
 ---| "down"
@@ -152,10 +160,15 @@ local function compute_resources(entities, di)
     for _, e in pairs(entities) do
         if e.type == ASSEMBLING_MACHINE or e.type == FURNACE then
             if e.get_recipe() ~= nil then
-                local time = e.get_recipe().energy / e.crafting_speed
-                local recipe_res = (di == "down" and e.get_recipe().ingredients or e.get_recipe().products)
-                for _,res in pairs(recipe_res) do
-                    resources[res.name] = (resources[res.name] or 0) + (res.amount * (1 / time))
+                if di == "down" and myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) or
+                    di == "up" and myutils.table.containsValue(NO_INPUT_STATUS, e.status) then
+                    -- Ignore full output downstream machines and missing input upstream machines.
+                else
+                    local time = e.get_recipe().energy / e.crafting_speed
+                    local recipe_res = (di == "down" and e.get_recipe().ingredients or e.get_recipe().products)
+                    for _,res in pairs(recipe_res) do
+                        resources[res.name] = (resources[res.name] or 0) + (res.amount * (1 / time))
+                    end
                 end
             end
         elseif e.type == MINING_DRILL then
