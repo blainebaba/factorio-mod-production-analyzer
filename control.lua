@@ -155,6 +155,11 @@ local function compute_resources(entities, di)
     local resources = {}
     for _, e in pairs(entities) do
 
+        local product_scale = 1
+        if di == "up" and e.productivity_bonus ~= nil then
+            product_scale = 1 + e.productivity_bonus
+        end
+
         -- recipe resources
         if e.type == ASSEMBLING_MACHINE or e.type == FURNACE then
             if di == "down" and myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) or
@@ -165,7 +170,7 @@ local function compute_resources(entities, di)
                     local time = e.get_recipe().energy / e.crafting_speed
                     local recipe_res = (di == "down" and e.get_recipe().ingredients or e.get_recipe().products)
                     for _,res in pairs(recipe_res) do
-                        resources[res.name] = (resources[res.name] or 0) + (res.amount * (1 / time))
+                        resources[res.name] = (resources[res.name] or 0) + (res.amount * (1 / time) * product_scale)
                     end
                 end
             end
@@ -176,7 +181,7 @@ local function compute_resources(entities, di)
                 if e.mining_target ~= nil then
                     local mining_time = e.mining_target.prototype.mineable_properties.mining_time
                     local mining_speed = e.prototype.mining_speed
-                    resources[e.mining_target.name] = (resources[e.mining_target.name] or 0) + (mining_speed / mining_time)
+                    resources[e.mining_target.name] = (resources[e.mining_target.name] or 0) + (mining_speed / mining_time * product_scale)
                 end
             end
         end
@@ -194,7 +199,7 @@ local function compute_resources(entities, di)
                     energy_usage_per_sec = e.prototype.max_energy_usage * 60
                 end
                 local total_enerygy = res.fuel_value
-                resources[res.name] = (resources[res.name] or 0) + (energy_usage_per_sec / total_enerygy)
+                resources[res.name] = (resources[res.name] or 0) + (energy_usage_per_sec / total_enerygy * product_scale)
             end
         end
     end
