@@ -187,9 +187,9 @@ local function compute_resources(entities, di)
                 local res = e.burner.currently_burning
                 local energy_usage_per_sec
                 if e.type == BOILER then
-                    -- boiler might not run at max energy usage
-                    -- TODO
-                    energy_usage_per_sec = e.prototype.max_energy_usage * 60
+                    local flow_speed = e.fluidbox.get_flow(2) * 60
+                    -- energy consumption perportion to flow speed, max flow speed 60/s 
+                    energy_usage_per_sec = (e.prototype.max_energy_usage * 60) * (flow_speed / 60);
                 else
                     energy_usage_per_sec = e.prototype.max_energy_usage * 60
                 end
