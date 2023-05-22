@@ -170,7 +170,10 @@ local function compute_resources(entities, di)
                     local time = e.get_recipe().energy / e.crafting_speed
                     local recipe_res = (di == "down" and e.get_recipe().ingredients or e.get_recipe().products)
                     for _,res in pairs(recipe_res) do
-                        resources[res.name] = (resources[res.name] or 0) + (res.amount * (1 / time) * product_scale)
+                        -- only consider items, exclude fluids.
+                        if game.item_prototypes[res.name] ~= nil then
+                            resources[res.name] = (resources[res.name] or 0) + (res.amount * (1 / time) * product_scale)
+                        end
                     end
                 end
             end
