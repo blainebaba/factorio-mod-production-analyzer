@@ -285,7 +285,7 @@ end)
 
 
 ---add monitor to a belt, compute production and consumption from directly connected machines.
-script.on_event('add-monitor', function(event)
+script.on_event('add-monitor-key', function(event)
     local player = game.players[event.player_index] -- LuaPlayer 
     local e = player.selected -- return selected entity 
     local surface = player.surface
@@ -317,7 +317,7 @@ script.on_event('add-monitor', function(event)
     end
 end)
 
-script.on_event('instant-analyze', function(event)
+script.on_event('instant-analyze-key', function(event)
     local player = game.players[event.player_index] -- LuaPlayer 
     local entity = player.selected -- return selected entity 
     local surface = player.surface

@@ -2,20 +2,20 @@
 data:extend({
     {
         type = "custom-input",
-        name = "add-monitor",
+        name = "add-monitor-key",
         key_sequence = "SHIFT + A",
         action = "lua",
         order = "b"
     },
     {
         type = "custom-input",
-        name = "instant-analyze",
+        name = "instant-analyze-key",
         key_sequence = "SHIFT + S",
         action = "lua",
         order = "b"
     },
     {
-        -- Invisible entity to attach the traces to and color the map.
+        -- Invisible entity to draw monitor.
         type = "simple-entity",
         name = "canvas",
         picture = {filename = "__core__/graphics/empty.png", size=1},
