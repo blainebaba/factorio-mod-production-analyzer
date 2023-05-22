@@ -1,10 +1,11 @@
 {
-  "name": "belt-analyzer",
-  "version": "0.0.1",
+  "name": "production-analyzer",
+  "version": "0.1",
   "factorio_version": "1.1",
-  "title": "Belt Analyzer",
+  "title": "Production Analyzer",
   "author": "Blaine",
-  "description": "Analyze belt connection.",
+  "homepage": "https://github.com/blainebaba/factorio-mod-production-analyzer",
+  "description": "Analyze production & consumption rate.",
   "dependencies": [
     "base >= 1.1.0"
   ]
