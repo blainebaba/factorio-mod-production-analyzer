@@ -2,10 +2,9 @@
   "name": "production-analyzer",
   "version": "0.1",
   "factorio_version": "1.1",
-  "title": "Production Analyzer",
+  "title": "production-analyzer",
   "author": "Blaine",
   "homepage": "https://github.com/blainebaba/factorio-mod-production-analyzer",
-  "description": "Analyze production & consumption rate.",
   "dependencies": [
     "base >= 1.1.0"
   ]
