@@ -298,7 +298,7 @@ script.on_event('add-monitor-key', function(event)
     end
 
     if not myutils.is_belt(e) then
-        game.print("can only attach analyzer to transport belt")
+        game.print({"pa.monitor-only-on-belt"})
         return
     end
 
@@ -330,7 +330,7 @@ script.on_event('instant-analyze-key', function(event)
     end
 
     if not myutils.is_belt(entity) then
-        game.print("Can only analyze on belt.")
+        game.print({"pa.analyze-only-on-belt"})
         return
     end
 
@@ -341,11 +341,11 @@ script.on_event('instant-analyze-key', function(event)
     local production = compute_resources(upstream_machines, "up")
     local matched_resources = match_resources(consumption, production)
 
-    local output = "Analyze result:\n"
+    local res_list_str = ""
     for res,cp in pairs(matched_resources) do
-        output = output .. "[img=item." .. res .. "]" .. 
+        res_list_str = res_list_str .. "[img=item." .. res .. "]" .. 
                 "[color=0.5,1,0.5]" .. (cp.p and myutils.decimal_round_up(cp.p) or "-") .."[/color]" .. "→" .. 
                 "[color=1,0.5,0.5]" .. (cp.c and myutils.decimal_round_up(cp.c) or "-") .. "[/color]\n"
     end
-    game.print(output)
+    game.print({"", {"pa.analyze-result"}, ":\n", res_list_str})
 end)
