@@ -1,21 +1,6 @@
 local myutils = require("myutils")
-
-local TRANSPORT_BELT = "transport-belt"
-local UNDERGROUND_BELT = "underground-belt"
-local SPLITTER = "splitter"
-local INSERTER = "inserter"
-local ASSEMBLING_MACHINE = "assembling-machine"
-local FURNACE = "furnace"
-local MINING_DRILL = "mining-drill"
-local BOILER = "boiler"
-
-local NO_INPUT_STATUS
-local FULL_OUTPUT_STATUS
-do
-    local s = defines.entity_status
-    NO_INPUT_STATUS = {s.fluid_ingredient_shortage, s.item_ingredient_shortage, s.no_ingredients}
-    FULL_OUTPUT_STATUS = {s.full_output}
-end
+local Monitor = require("analyzer.Monitor")
+local const = require("analyzer.const")
 
 ---@alias Direction
 ---| "up"
@@ -30,7 +15,7 @@ local function get_inserters(pos, di, surface)
         for _, delta in ipairs({1, -1, 2, -2}) do
             local target_pos = {x = pos.x, y = pos.y}
             target_pos[aixs] = target_pos[aixs] + delta
-            local entity = surface.find_entities_filtered({position = target_pos, type = "inserter"})[1]
+            local entity = surface.find_entities_filtered({position = target_pos, type = const.INSERTER})[1]
             if entity ~= nil then
                 local attach_position
                 if di == "down" then
@@ -58,7 +43,7 @@ local function get_mining_drill(belt, surface)
         for _, delta in ipairs({1, -1}) do
             local target_pos = {x = pos.x, y = pos.y}
             target_pos[aixs] = target_pos[aixs] + delta
-            local entity = surface.find_entities_filtered({position = target_pos, type = "mining-drill"})[1]
+            local entity = surface.find_entities_filtered({position = target_pos, type = const.MINING_DRILL})[1]
             if entity ~= nil then
                 -- make sure resources is dropped at the position
                 if entity.drop_target == belt then
@@ -82,7 +67,7 @@ local function scan_machines(start_belt, surface, di)
     local next_batch = {}
     while #cur_batch > 0 do
         for _, cur in pairs(cur_batch) do
-            if cur.type == ASSEMBLING_MACHINE then
+            if cur.type == const.ASSEMBLING_MACHINE then
                 local key = myutils.get_id(cur)
                 if all_entities[key] == nil then
                     all_entities[key] = cur
@@ -93,17 +78,17 @@ local function scan_machines(start_belt, surface, di)
                 local neighbours = {}
                 do
                     -- belts
-                    if cur.type == TRANSPORT_BELT or cur.type == SPLITTER or cur.type == UNDERGROUND_BELT then            
+                    if cur.type == const.TRANSPORT_BELT or cur.type == const.SPLITTER or cur.type == const.UNDERGROUND_BELT then            
                         -- connected belts
-                        if cur.type == UNDERGROUND_BELT and cur.belt_to_ground_type == (di == "down" and "input" or "output") then
+                        if cur.type == const.UNDERGROUND_BELT and cur.belt_to_ground_type == (di == "down" and "input" or "output") then
                             table.insert(neighbours, cur.neighbours)
                         else
                             myutils.table.insertAll(neighbours, cur.belt_neighbours[(di == "down" and "outputs" or "inputs")])
                         end
                         -- connected inserters
-                        if cur.type == TRANSPORT_BELT or cur.type == UNDERGROUND_BELT then
+                        if cur.type == const.TRANSPORT_BELT or cur.type == const.UNDERGROUND_BELT then
                             myutils.table.insertAll(neighbours, get_inserters(cur.position, di, surface))
-                        elseif cur.type == SPLITTER then
+                        elseif cur.type == const.SPLITTER then
                             -- TODO
                         end
                         -- connected mining drill
@@ -111,7 +96,7 @@ local function scan_machines(start_belt, surface, di)
                             myutils.table.insertAll(neighbours, get_mining_drill(cur, surface))
                         end
                     -- inserter
-                    elseif cur.type == INSERTER then
+                    elseif cur.type == const.INSERTER then
                         local connect_pos
                         if di == "down" then
                             connect_pos = myutils.inserter.get_insert_position(cur.position, cur.pickup_position)
@@ -121,7 +106,7 @@ local function scan_machines(start_belt, surface, di)
                         -- connected belts, machines, furnance, boiler
                         local e = surface.find_entities_filtered({
                             position = connect_pos, 
-                            type = {TRANSPORT_BELT, UNDERGROUND_BELT, SPLITTER, ASSEMBLING_MACHINE, FURNACE, BOILER}
+                            type = {const.TRANSPORT_BELT, const.UNDERGROUND_BELT, const.SPLITTER, const.ASSEMBLING_MACHINE, const.FURNACE, const.BOILER}
                             })[1]
                         if e ~= nil then
                             table.insert(neighbours, e)
@@ -136,7 +121,7 @@ local function scan_machines(start_belt, surface, di)
                     if all_entities[key] == nil then
                         all_entities[key] = n
                         table.insert(next_batch, n)
-                        if myutils.table.containsValue({ASSEMBLING_MACHINE, FURNACE, MINING_DRILL, BOILER}, n.type) then
+                        if myutils.table.containsValue({const.ASSEMBLING_MACHINE, const.FURNACE, const.MINING_DRILL, const.BOILER}, n.type) then
                             table.insert(machines, n)
                         end
                     end
@@ -161,9 +146,9 @@ local function compute_resources(entities, di)
         end
 
         -- recipe resources
-        if e.type == ASSEMBLING_MACHINE or e.type == FURNACE then
-            if di == "down" and myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) or
-                di == "up" and myutils.table.containsValue(NO_INPUT_STATUS, e.status) then
+        if e.type == const.ASSEMBLING_MACHINE or e.type == const.FURNACE then
+            if di == "down" and myutils.table.containsValue(const.FULL_OUTPUT_STATUS, e.status) or
+                di == "up" and myutils.table.containsValue(const.NO_INPUT_STATUS, e.status) then
                 -- Ignore full output downstream machines and missing input upstream machines.
             else
                 if e.get_recipe() ~= nil then
@@ -179,7 +164,7 @@ local function compute_resources(entities, di)
             end
         end
 
-        if e.type == MINING_DRILL then
+        if e.type == const.MINING_DRILL then
             if di == "up" then
                 if e.mining_target ~= nil then
                     local mining_time = e.mining_target.prototype.mineable_properties.mining_time
@@ -191,10 +176,10 @@ local function compute_resources(entities, di)
 
         -- furnace/boiler coal consumption
         if e.burner ~= nil and di == "down" then
-            if e.burner.currently_burning ~= nil and not myutils.table.containsValue(FULL_OUTPUT_STATUS, e.status) then
+            if e.burner.currently_burning ~= nil and not myutils.table.containsValue(const.FULL_OUTPUT_STATUS, e.status) then
                 local res = e.burner.currently_burning
                 local energy_usage_per_sec
-                if e.type == BOILER then
+                if e.type == const.BOILER then
                     local flow_speed = e.fluidbox.get_flow(2) * 60
                     -- energy consumption perportion to flow speed, max flow speed 60/s 
                     energy_usage_per_sec = (e.prototype.max_energy_usage * 60) * (flow_speed / 60);
@@ -315,7 +300,7 @@ script.on_event('add-monitor-key', function(event)
             name = 'canvas',
             position = e.position,
         })
-        global[MONITOR_KEY][key] = {canvas = canvas, belt = e, player = player, surface = surface, texts = {}}
+        global[MONITOR_KEY][key] = Monitor.new(canvas, e, player, surface)
         update_monitor(global[MONITOR_KEY][key])
     end
 end)
