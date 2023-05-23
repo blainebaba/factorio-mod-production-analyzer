@@ -3,14 +3,14 @@ data:extend({
     {
         type = "custom-input",
         name = "add-monitor-key",
-        key_sequence = "SHIFT + A",
+        key_sequence = "CONTROL + A",
         action = "lua",
         order = "b"
     },
     {
         type = "custom-input",
         name = "instant-analyze-key",
-        key_sequence = "SHIFT + S",
+        key_sequence = "CONTROL + S",
         action = "lua",
         order = "b"
     },
