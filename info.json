@@ -3,6 +3,7 @@
   "version": "0.1.1",
   "factorio_version": "1.1",
   "title": "production-analyzer",
+  "description": "Analyzes production & consumption rate of upstream/downstream machines along a belt.",
   "author": "Blaine",
   "homepage": "https://github.com/blainebaba/factorio-mod-production-analyzer",
   "dependencies": [
