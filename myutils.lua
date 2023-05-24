@@ -2,6 +2,7 @@ local myutils = {}
 myutils.inserter = {}
 myutils.table = {}
 myutils.math2d = require("math2d")
+
 local inserter = myutils.inserter
 local math2d = myutils.math2d
 
