@@ -24,7 +24,9 @@ function Monitor.new(canvas, belt, player, surface)
         belt = belt,
         player = player,
         surface = surface,
-        texts = {}
+        texts = {},
+        downstream_machines = {},
+        upstream_machines = {},
     }
     setmetatable(monitor, metatable)
     return monitor
@@ -59,13 +61,16 @@ function prototype:draw_monitor_canvas(matched_resources)
     table.insert(self.texts, text_id)
 end
 
-function prototype:update_monitor()
+---@param scan_machines boolean control whether to re-scan connected machines, when no entities are construct/removed, we can skip the scan.
+function prototype:update_monitor(scan_machines)
 
-    local downstream_machines = analyze.scan_machines(self.belt, self.surface, "down")
-    local upstream_machines = analyze.scan_machines(self.belt, self.surface, "up")
+    if scan_machines then
+        self.downstream_machines = analyze.scan_machines(self.belt, self.surface, "down")
+        self.upstream_machines = analyze.scan_machines(self.belt, self.surface, "up")
+    end
 
-    local consumption = analyze.compute_resources(downstream_machines, "down")
-    local production = analyze.compute_resources(upstream_machines, "up")
+    local consumption = analyze.compute_resources(self.downstream_machines, "down")
+    local production = analyze.compute_resources(self.upstream_machines, "up")
 
     local matched_resources = analyze.match_resources(consumption, production)
 
@@ -87,28 +92,38 @@ function Monitor.add_or_remove_monitor(belt, player, surface)
         })
         local monitor = Monitor.new(canvas, belt, player, surface)
         container:put(key, monitor)
-        monitor:update_monitor()
+        monitor:update_monitor(true)
     end
 end
+
+local entities_changed = true
+-- set flag when entities are changed
+script.on_event(const.ADD_REMOVE_EVENTS, function(_)
+    entities_changed = true
+end)
 
 local monitor_iter
 local MIN_UPDATE_INTERVAL_TICKS = 60
 local tick_since_last_round = 0
+local entities_changed_in_last_round = true
 --- update monitor periodically
-script.on_nth_tick(1, function(event)
-    tick_since_last_round = tick_since_last_round + 1
+script.on_nth_tick(6, function(event)
+    tick_since_last_round = tick_since_last_round + 6
+    local a = entities_changed
 
     if monitor_iter == nil then
         -- only start next round after min interval
         if tick_since_last_round >= MIN_UPDATE_INTERVAL_TICKS then
             monitor_iter = get_container():iter()
             tick_since_last_round = 0
+            entities_changed_in_last_round = entities_changed
+            entities_changed = false
         end
     else
         -- finish this round
         if monitor_iter.has_next() then
             local monitor = monitor_iter.next()
-            monitor:update_monitor()
+            monitor:update_monitor(entities_changed or entities_changed_in_last_round)
         else
             monitor_iter = nil
         end
