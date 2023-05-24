@@ -1,12 +1,16 @@
 local analyze = require("analyzer.analyze")
 local myutils = require("myutils")
 
+
 local Monitor = {}
 local prototype = {}
 
 -- key to stores all available monitors in global variable
 local MONITOR_GLOBAL_KEY = "belt-analyzer-monitors"
 Monitor.MONITOR_GLOBAL_KEY = MONITOR_GLOBAL_KEY
+
+local monitor_container = global[MONITOR_GLOBAL_KEY] or require("monitor_container")
+global[MONITOR_GLOBAL_KEY] = monitor_container
 
 function Monitor.new(canvas, belt, player, surface)
     local monitor = {
@@ -65,31 +69,41 @@ end
 --add monitor if not exist, otherwise remove
 function Monitor.add_or_remove_monitor(belt, player, surface)
     -- create or delete monitor
-    if global[MONITOR_GLOBAL_KEY] == nil then
-        global[MONITOR_GLOBAL_KEY] = {}
-    end
     local key = myutils.get_id(belt)
-    if global[MONITOR_GLOBAL_KEY][key] ~= nil then
-        global[MONITOR_GLOBAL_KEY][key].canvas.destroy()
-        global[MONITOR_GLOBAL_KEY][key] = nil
+    if monitor_container.get(key) ~= nil then
+        monitor_container.get(key).canvas.destroy()
+        monitor_container.remove(key)
     else
         local canvas = surface.create_entity({
             name = 'canvas',
             position = belt.position,
         })
         local monitor = Monitor.new(canvas, belt, player, surface)
-        global[MONITOR_GLOBAL_KEY][key] = monitor
+        monitor_container.put(key, monitor)
         monitor:update_monitor()
     end
 end
 
+local monitor_iter
+local MIN_UPDATE_INTERVAL_TICKS = 60
+local tick_since_last_update = 0
 --- update monitor periodically
 script.on_nth_tick(60, function(event)
-    if global[MONITOR_GLOBAL_KEY] == nil then
-        global[MONITOR_GLOBAL_KEY] = {}
-    end
-    for _, monitor in pairs(global[MONITOR_GLOBAL_KEY]) do
-        monitor:update_monitor()
+    tick_since_last_update = tick_since_last_update + 1
+
+    if monitor_iter == nil then
+        -- only start next round after min interval
+        if tick_since_last_update >= MIN_UPDATE_INTERVAL_TICKS then
+            monitor_iter = monitor_container.iter()
+            tick_since_last_update = 0
+        end
+    else
+        -- finish this round
+        if monitor_iter.has_next() then
+            local monitor = monitor_iter.next()
+        else
+            monitor_iter = nil
+        end
     end
 end)
 
