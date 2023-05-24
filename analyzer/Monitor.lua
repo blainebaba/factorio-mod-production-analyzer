@@ -1,5 +1,6 @@
 local analyze = require("analyzer.analyze")
 local myutils = require("myutils")
+local const = require("analyzer.const")
 local LinkedHashMap = require("common.LinkedHashMap")
 
 local Monitor = {}
@@ -74,7 +75,7 @@ end
 --add monitor if not exist, otherwise remove
 function Monitor.add_or_remove_monitor(belt, player, surface)
     -- create or delete monitor
-    local key = myutils.get_id(belt)
+    local key = belt.unit_number
     local container = get_container()
     if container:get(key) ~= nil then
         container:get(key).canvas.destroy()
@@ -92,16 +93,16 @@ end
 
 local monitor_iter
 local MIN_UPDATE_INTERVAL_TICKS = 60
-local tick_since_last_update = 0
+local tick_since_last_round = 0
 --- update monitor periodically
 script.on_nth_tick(1, function(event)
-    tick_since_last_update = tick_since_last_update + 1
+    tick_since_last_round = tick_since_last_round + 1
 
     if monitor_iter == nil then
         -- only start next round after min interval
-        if tick_since_last_update >= MIN_UPDATE_INTERVAL_TICKS then
+        if tick_since_last_round >= MIN_UPDATE_INTERVAL_TICKS then
             monitor_iter = get_container():iter()
-            tick_since_last_update = 0
+            tick_since_last_round = 0
         end
     else
         -- finish this round
@@ -114,5 +115,16 @@ script.on_nth_tick(1, function(event)
     end
 end)
 
+-- remove monitor when underlying belts are removed
+script.on_event(const.REMOVE_EVENTS, function (event)
+    if myutils.is_belt(event.entity) then
+        local key = event.entity.unit_number
+        local container = get_container()
+        if container:get(key) ~= nil then
+            container:get(key).canvas.destroy()
+            container:remove(key)
+        end
+    end
+end)
 
 return Monitor

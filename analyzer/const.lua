@@ -10,8 +10,16 @@ local const = {
     BOILER = "boiler",
 }
 
-local s = defines.entity_status
-const.NO_INPUT_STATUS = {s.fluid_ingredient_shortage, s.item_ingredient_shortage, s.no_ingredients}
-const.FULL_OUTPUT_STATUS = {s.full_output}
+do
+    local s = defines.entity_status
+    const.NO_INPUT_STATUS = {s.fluid_ingredient_shortage, s.item_ingredient_shortage, s.no_ingredients}
+    const.FULL_OUTPUT_STATUS = {s.full_output}
+end
+
+do
+    local e=defines.events
+    const.REMOVE_EVENTS = {e.on_player_mined_entity, e.on_robot_pre_mined, e.on_entity_died, e.script_raised_destroy}
+    const.ADD_EVENTS = {e.on_built_entity, e.on_robot_built_entity, e.script_raised_revive, e.script_raised_built}
+end
 
 return const
