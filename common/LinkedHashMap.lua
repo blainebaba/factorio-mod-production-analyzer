@@ -9,9 +9,9 @@ function LinkedHashMap.new()
     local instance = {
         map = {},
         -- dummy head node for linked list
-        head = {},
+        head = {is_active = true},
         -- dummy tail node for linked list
-        tail = {},
+        tail = {is_active = true},
     }
     instance.head.next = instance.tail
     instance.tail.last = instance.head
@@ -26,8 +26,8 @@ function prototype:get(key)
     end
 end
 
-function prototype:put(key, container)
-    local entry = {value = container}
+function prototype:put(key, value)
+    local entry = {value = value, is_active = true}
     self.map[key] = entry
 
     entry.last = self.tail.last
@@ -44,6 +44,8 @@ function prototype:remove(key)
 
     entry.last.next = entry.next
     entry.next.last = entry.last
+    -- handle cases that cur node is removed in iter
+    entry.is_active = false
     self.map[key] = nil
 end
 
@@ -53,13 +55,21 @@ function prototype:iter()
     local cur = self.head.next
 
     iter.next = function ()
+        while not cur.is_active do
+            cur = cur.next
+        end
+
         if cur ~= self.tail then
             cur = cur.next
-            return cur.last.value
+            return cur.last.value 
         end
     end
 
     iter.has_next = function ()
+        while not cur.is_active do
+            cur = cur.next
+        end
+
         return cur ~= self.tail
     end
 
